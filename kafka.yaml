@@ -1,0 +1,87 @@
+#first we define the namespace it will run in
+apiVersion: v1
+kind: Namspace
+metadata:
+  name: kafka-ns
+
+#deployment for both kafka and zookeeper
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  namespace:  kafka-ns
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+    app:  zookeeper
+  template:
+    metadata:
+      labels:
+      app: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image:  confluentinc/cp-zookeeper:7.5.0
+        ports:
+        - containerPort: "2181"
+      env:
+      - name: ZOOKEEPER_CLIENT_PORT
+        value: "2181"
+      - name: ZOOKEEPER_TICK_TIME
+        value:  "2000"
+
+#zookeeper service
+apiVersion: v1
+kind: Service
+matadata:
+  name: zookeeper-service
+  namespce: kafka-ns
+spec:
+  selector:
+    app:  zookeeper
+  ports:
+  - protocol: TCP
+    port: 2181
+    targetPort: 2181
+
+#kafka persistent vlumne claims
+apiVsersion:  v1
+kind: PersistentVolumesClaim
+metadata:
+  name: kafka-pvc
+  namespce: kafka-ns
+spec:
+  accessMode:
+  - ReadwriteOnce
+  resources:
+    requests:
+      storage:  2Gi
+
+#kafka deployment
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace:  kafka-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app:  kafka
+    template: 
+      metadata:
+        labels:
+          app:  kafka
+      spec:
+        valumes: 
+        - name: kafka-storage
+          persistentVolumesClaim:
+            claimName: kafka-pvc
+        containers:
+        - name: kafka
+          image:  confluentinc/cp-kafka:7.5.0
+          port:
+          - containerPort: "9092"
+          
