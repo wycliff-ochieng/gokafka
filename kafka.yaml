@@ -1,43 +1,45 @@
 #first we define the namespace it will run in
 apiVersion: v1
-kind: Namspace
+kind: Namespace
 metadata:
   name: kafka-ns
 
+---
 #deployment for both kafka and zookeeper
-apiVersion: v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zookeeper
-  namespace:  kafka-ns
-
+  namespace: kafka-ns
 spec:
   replicas: 1
   selector:
     matchLabels:
-    app:  zookeeper
+      app: zookeeper
   template:
     metadata:
       labels:
-      app: zookeeper
+        app: zookeeper
     spec:
       containers:
       - name: zookeeper
         image:  confluentinc/cp-zookeeper:7.5.0
         ports:
-        - containerPort: "2181"
-      env:
-      - name: ZOOKEEPER_CLIENT_PORT
-        value: "2181"
-      - name: ZOOKEEPER_TICK_TIME
-        value:  "2000"
+        - containerPort: 2181
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "2181"
+        - name: ZOOKEEPER_TICK_TIME
+          value:  "2000"
+
+---
 
 #zookeeper service
 apiVersion: v1
 kind: Service
-matadata:
+metadata:
   name: zookeeper-service
-  namespce: kafka-ns
+  namespace: kafka-ns
 spec:
   selector:
     app:  zookeeper
@@ -46,21 +48,23 @@ spec:
     port: 2181
     targetPort: 2181
 
+---
 #kafka persistent vlumne claims
-apiVsersion:  v1
-kind: PersistentVolumesClaim
+apiVersion:  v1
+kind: PersistentVolumeClaim
 metadata:
   name: kafka-pvc
-  namespce: kafka-ns
+  namespace: kafka-ns
 spec:
-  accessMode:
-  - ReadwriteOnce
+  accessModes:
+  - ReadWriteOnce
   resources:
     requests:
       storage:  2Gi
 
+---
 #kafka deployment
-apiVersion: v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kafka
@@ -69,19 +73,48 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app:  kafka
-    template: 
-      metadata:
-        labels:
-          app:  kafka
-      spec:
-        valumes: 
+      app: kafka
+  template: 
+    metadata:
+      labels:
+        app:  kafka
+    spec:
+      volumes: 
+      - name: kafka-storage
+        persistentVolumeClaim:
+          claimName: kafka-pvc
+      containers:
+      - name: kafka
+        image:  confluentinc/cp-kafka:7.5.0
+        ports:
+        - containerPort: 9092
+        volumeMounts:
         - name: kafka-storage
-          persistentVolumesClaim:
-            claimName: kafka-pvc
-        containers:
-        - name: kafka
-          image:  confluentinc/cp-kafka:7.5.0
-          port:
-          - containerPort: "9092"
+          mountPath: /var/lib/kafka/data
+        env:
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "zookeeper-service:2181"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: PLAINTEXT:PLAINTEXT
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: PLAINTEXT://kafka-service.kafka.ns.svc.cluster.local:9002
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value:  "1"
+
+---
+#kafka service
+apiVersion: v1
+kind: Service
+metadata: 
+  name: kafka-service
+  namespace: kafka-ns
+spec:
+  selector:
+    app: kafka
+  ports:
+  - protocol: TCP
+    port: 9092
+    targetPort: 9092
           

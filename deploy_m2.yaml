@@ -1,0 +1,23 @@
+apiVersion: v1
+metadata:
+  name: gokakfa-deployment-m2
+  namespace:  gokafka-namespace
+spec:
+  repilicas: "2"
+  selector: 
+    matchLabels:
+      app: gokafka-deploy-m2
+  template:
+    metadata:
+      labels:
+        app:  gokafka-deploy-m2
+    spec:
+      containers:
+      - name: gokafka-deploy-container-m2
+        image: kafka-wyckie-microservice-2
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: "8080"
+        envFrom:
+        - configMapRef:
+          app: gokafka-ConfigMap
