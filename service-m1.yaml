@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gokafka-service-m1
+  namespace: gokafka-namespace
+spec:
+  type: clusterIP
+  selector:
+    app: gokafka-service-m1
+  ports:
+    protocol: TCP
+    port: 80
+    targetPort: 8080

@@ -1,4 +1,7 @@
 apiVersion:  v1
 kind: ConfigMap
 metadata:
-  name:
+  name: gokafka-ConfigMap
+  namespace: gokafka-namespace
+data:
+  KAFKA_BROKER_URL: "kafka-service.kafka.ns.svc.cluster.local:9002"
