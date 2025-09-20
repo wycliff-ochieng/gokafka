@@ -4,10 +4,10 @@ metadata:
   name: gokafka-service-m2
   namespace: gokafka-namespace
 spec:
-  type: clusterIP
+  type: ClusterIP
   selector:
     app: gokafka-service-m2
   ports:
-    protocol: TCP
+  - protocol: TCP
     port: 80
     targetPort: 8080
